@@ -5,12 +5,23 @@ extern crate bitcoin;
 
 use bitcoin::hashes::hex::FromHex;
 use bitcoin::hash_types::Txid;
-use bitcoin::Transaction;
+use bitcoin::{
+    OutPoint,
+    Transaction,
+    TxOut,
+};
 use bitcoin::blockdata::constants::MAX_SEQUENCE;
+use bitcoin::secp256k1::Signature;
 use bitcoincore_rpc::{Auth, Client, RpcApi};
 use bitcoincore_rpc::json::GetRawTransactionResult;
 
-use std::collections::BTreeSet;
+use rawtx_rs::tx::TxInfo;
+use rawtx_rs::script::SignatureType;
+
+use std::collections::{
+    BTreeSet,
+    HashMap,
+};
 use std::env;
 
 const MAX_NON_FINAL_SEQUENCE: u32 = MAX_SEQUENCE - 1;
@@ -64,7 +75,27 @@ fn probably_anti_fee_snipe(tx: &Transaction, confs: Option<u32>, rpc: &Client) -
     return u64::from(tx.lock_time) >= block_height - 100;
 }
 
-fn maybe_bitcoin_core(txinfo: &GetRawTransactionResult, rpc: &Client) -> bool {
+fn probability_low_r_grinding(tx: &Transaction) -> f32 {
+    let txinfo = TxInfo::new(tx).unwrap();
+
+    let mut count_sigs: u32 = 0;
+    for txininfo in txinfo.input_infos.iter() {
+        for sigsinfo in txininfo.signature_info.iter() {
+            if let SignatureType::Ecdsa = sigsinfo.sig_type {
+                count_sigs += 1;
+                let sig = Signature::from_der(sigsinfo.signature.split_last().unwrap().1).unwrap();
+                let compact_sig = sig.serialize_compact();
+                if compact_sig[0] >= 0x80 {
+                    return 0.0;
+                }
+            }
+        }
+    }
+
+    return 1.0 - 0.5_f32.powf(count_sigs as f32);
+}
+
+fn maybe_bitcoin_core(txinfo: &GetRawTransactionResult, prevouts: &HashMap<OutPoint, TxOut>, rpc: &Client) -> bool {
     let tx = txinfo.transaction().unwrap();
 
     match classify_sequences(&tx) {
@@ -76,8 +107,22 @@ fn maybe_bitcoin_core(txinfo: &GetRawTransactionResult, rpc: &Client) -> bool {
     if !probably_anti_fee_snipe(&tx, txinfo.confirmations, rpc) {
         return false;
     }
+
+    let prob = probability_low_r_grinding(&tx);
+    if prob <= 0.5 {
+        return false;
+    }
     
     return true;
+}
+
+fn get_previous_outputs(tx: &Transaction, rpc: &Client) -> HashMap<OutPoint, TxOut> {
+    let mut out = HashMap::<OutPoint, TxOut>::new();
+    for txin in tx.input.iter() {
+        let prev_tx = rpc.get_raw_transaction(&txin.previous_output.txid, None).unwrap();
+        out.insert(txin.previous_output, prev_tx.output[txin.previous_output.vout as usize].clone());
+    }
+    return out;
 }
 
 fn main() {
@@ -90,8 +135,9 @@ fn main() {
 
 
     let txinfo = rpc.get_raw_transaction_info(&txid, None).unwrap();
+    let prevouts = get_previous_outputs(&txinfo.transaction().unwrap(), &rpc);
 
-    let is_core = maybe_bitcoin_core(&txinfo, &rpc);
+    let is_core = maybe_bitcoin_core(&txinfo, &prevouts, &rpc);
 
     if is_core {
         println!("Maybe Bitcoin Core");

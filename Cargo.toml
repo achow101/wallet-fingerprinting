@@ -6,5 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bitcoincore-rpc = "0.15.0"
-bitcoin = "0.28.1"
+bitcoincore-rpc = "0.14.0"
+bitcoin = "0.27"
+rawtx-rs = { git = "https://github.com/0xB10C/rawtx-rs.git", rev = "36eb9683ab71feb80a85d6043c05dce6df10838d" }
