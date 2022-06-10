@@ -98,6 +98,10 @@ fn probability_low_r_grinding(tx: &Transaction) -> f32 {
 fn maybe_bitcoin_core(txinfo: &GetRawTransactionResult, prevouts: &HashMap<OutPoint, TxOut>, rpc: &Client) -> bool {
     let tx = txinfo.transaction().unwrap();
 
+    if tx.version != 2 {
+        return false;
+    }
+
     match classify_sequences(&tx) {
         SequenceType::OnlyRBF => {}
         SequenceType::OnlyNonFinal => {}
