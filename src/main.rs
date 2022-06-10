@@ -134,7 +134,7 @@ fn probability_bip69(tx: &Transaction) -> Option<f64> {
     return Some(1.0 - prob);
 }
 
-fn maybe_bitcoin_core(txinfo: &GetRawTransactionResult, prevouts: &HashMap<OutPoint, TxOut>, rpc: &Client) -> bool {
+fn maybe_bitcoin_core(txinfo: &GetRawTransactionResult, _prevouts: &HashMap<OutPoint, TxOut>, rpc: &Client) -> bool {
     let tx = txinfo.transaction().unwrap();
 
     if tx.version != 2 {
