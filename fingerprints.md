@@ -13,6 +13,7 @@ No preset inputs, no user custom things, just the default Bitcoin Core as a soft
   * Especially if there are a lot of inputs
 * Tx version 2
 * Negative EV inputs
+* Address types: P2PK, P2PKH, P2SH-P2WPKH, P2WPKH, P2TR
 
 ## Electrum
 
@@ -25,3 +26,4 @@ No preset inputs, no user custom things, just the default Electrum as a software
 * Postive EV only unless SEND_MAX
 * Same input types
 * Change type same as input type
+* Address types: P2PKH, P2SH-P2WPKH, P2WPKH
