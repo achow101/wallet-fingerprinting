@@ -15,6 +15,8 @@ use bitcoin::secp256k1::Signature;
 use bitcoincore_rpc::{Auth, Client, RpcApi};
 use bitcoincore_rpc::json::GetRawTransactionResult;
 
+use factorial::Factorial;
+
 use rawtx_rs::tx::TxInfo;
 use rawtx_rs::script::SignatureType;
 
@@ -95,6 +97,43 @@ fn probability_low_r_grinding(tx: &Transaction) -> f32 {
     return 1.0 - 0.5_f32.powf(count_sigs as f32);
 }
 
+fn probability_bip69(tx: &Transaction) -> Option<f64> {
+    // Not enough data for 1-in and 1-out to classify BIP69
+    if tx.input.len() == 1 && tx.output.len() == 1 {
+        return None;
+    }
+
+    let txinfo = TxInfo::new(tx).unwrap();
+
+    if !txinfo.is_bip69_compliant() {
+        return Some(0.0);
+    }
+
+    // Probability of not BIP69
+    let mut prob: f64 = 1.0;
+    let input_perms = tx.input.len().checked_factorial();
+    match input_perms {
+        Some(p) => {
+            prob *= 1.0_f64 / p as f64;
+        }
+        None => {
+            return Some(1.0);
+        }
+    }
+    let output_perms = tx.output.len().checked_factorial();
+    match output_perms {
+        Some(p) => {
+            prob *= 1.0_f64 / p as f64;
+        }
+        None => {
+            return Some(1.0);
+        }
+    }
+
+    // 1 - p for probability of being BIP69
+    return Some(1.0 - prob);
+}
+
 fn maybe_bitcoin_core(txinfo: &GetRawTransactionResult, prevouts: &HashMap<OutPoint, TxOut>, rpc: &Client) -> bool {
     let tx = txinfo.transaction().unwrap();
 
@@ -112,11 +151,21 @@ fn maybe_bitcoin_core(txinfo: &GetRawTransactionResult, prevouts: &HashMap<OutPo
         return false;
     }
 
-    let prob = probability_low_r_grinding(&tx);
-    if prob <= 0.5 {
+    let prob_low_r = probability_low_r_grinding(&tx);
+    if prob_low_r <= 0.5 {
         return false;
     }
-    
+
+    let prob_bip69 = probability_bip69(&tx);
+    match prob_bip69 {
+        Some(p) => {
+            if p > 0.5 {
+                return false;
+            }
+        }
+        None => {}
+    }
+
     return true;
 }
 

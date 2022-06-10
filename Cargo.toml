@@ -8,4 +8,5 @@ edition = "2021"
 [dependencies]
 bitcoincore-rpc = "0.14.0"
 bitcoin = "0.27"
+factorial = "0.2"
 rawtx-rs = { git = "https://github.com/0xB10C/rawtx-rs.git", rev = "36eb9683ab71feb80a85d6043c05dce6df10838d" }
