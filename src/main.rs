@@ -3,11 +3,13 @@
 extern crate bitcoincore_rpc;
 extern crate bitcoin;
 
+use bitcoin::consensus::Encodable;
 use bitcoin::hashes::hex::FromHex;
 use bitcoin::hash_types::Txid;
 use bitcoin::{
     OutPoint,
     Transaction,
+    TxIn,
     TxOut,
 };
 use bitcoin::blockdata::constants::MAX_SEQUENCE;
@@ -62,6 +64,14 @@ fn classify_sequences(tx: &Transaction) -> SequenceType {
             _ => { return SequenceType::Custom; }
         }
     }
+}
+
+fn get_input_vsize(txin: &TxIn) -> usize {
+    let s = Vec::<u8>::new();
+    let txin_size = txin.consensus_encode(s).unwrap();
+    let s2 = Vec::<u8>::new();
+    let wit_size = txin.witness.consensus_encode(s2).unwrap();
+    return txin_size + (wit_size / 4);
 }
 
 fn probably_anti_fee_snipe(tx: &Transaction, confs: Option<u32>, rpc: &Client) -> bool {
@@ -132,6 +142,26 @@ fn probability_bip69(tx: &Transaction) -> Option<f64> {
 
     // 1 - p for probability of being BIP69
     return Some(1.0 - prob);
+}
+
+fn spends_negative_ev(tx: &Transaction, prevouts: &HashMap<OutPoint, TxOut>) -> bool {
+    let mut fee: u64 = 0;
+    for txin in tx.input.iter() {
+        fee += prevouts.get(&txin.previous_output).unwrap().value;
+    }
+    for txout in tx.output.iter() {
+        fee -= txout.value;
+    }
+    let feerate = fee as f64 / (tx.get_weight() as f64 / 4_f64);
+    for txin in tx.input.iter() {
+        let txin_vsize = get_input_vsize(&txin);
+        let fee = feerate * txin_vsize as f64;
+        let ev = prevouts.get(&txin.previous_output).unwrap().value as f64 - fee;
+        if ev <= 0.0 {
+            return true;
+        }
+    }
+    return false;
 }
 
 fn maybe_bitcoin_core(txinfo: &GetRawTransactionResult, _prevouts: &HashMap<OutPoint, TxOut>, rpc: &Client) -> bool {
