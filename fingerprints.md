@@ -2,6 +2,8 @@
 
 ## Bitcoin Core
 
+No preset inputs, no user custom things, just the default Bitcoin Core as a software wallet.
+
 * Anti-fee-sniping with nLockTime
   * locktime is either current block height
   * or 10% randomly up to 100 blocks back, randomly
@@ -13,6 +15,8 @@
 * Negative EV inputs
 
 ## Electrum
+
+No preset inputs, no user custom things, just the default Electrum as a software wallet.
 
 * Sequence either MAX - 1 or MAX - 2 (RBF)
 * Anti-fee-sniping with nLockTime (same behavior as Core)
