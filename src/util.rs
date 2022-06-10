@@ -7,6 +7,14 @@ use bitcoincore_rpc::{Client, RpcApi};
 
 use std::collections::HashMap;
 
+pub enum WalletConfidence {
+    DefinitelyNot,
+    ProbablyNot,
+    Indeterminate,
+    MaybeYes,
+    ProbablyYes,
+}
+
 pub fn get_previous_outputs(tx: &Transaction, rpc: &Client) -> HashMap<OutPoint, TxOut> {
     let mut out = HashMap::<OutPoint, TxOut>::new();
     for txin in tx.input.iter() {

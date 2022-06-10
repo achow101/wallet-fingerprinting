@@ -12,11 +12,16 @@ mod electrum;
 use electrum::maybe_electrum;
 
 mod util;
-use util::get_previous_outputs;
+use util::{
+    get_previous_outputs,
+    WalletConfidence,
+};
 
 use bitcoin::hashes::hex::FromHex;
 use bitcoin::hash_types::Txid;
 use bitcoincore_rpc::{Auth, Client, RpcApi};
+
+use std::collections::HashMap;
 
 use std::env;
 
@@ -32,18 +37,19 @@ fn main() {
     let txinfo = rpc.get_raw_transaction_info(&txid, None).unwrap();
     let prevouts = get_previous_outputs(&txinfo.transaction().unwrap(), &rpc);
 
-    let is_core = maybe_bitcoin_core(&txinfo, &prevouts, &rpc);
+    let mut results = HashMap::<&str, WalletConfidence>::new();
+    results.insert("Bitcoin Core", maybe_bitcoin_core(&txinfo, &prevouts, &rpc));
+    results.insert("Electrum", maybe_electrum(&txinfo, &prevouts, &rpc));
 
-    if is_core {
-        println!("Maybe Bitcoin Core");
-    } else {
-        println!("Probably not Bitcoin COre");
-    }
-
-    let is_electrum = maybe_electrum(&txinfo, &prevouts, &rpc);
-    if is_electrum {
-        println!("Maybe Electrum");
-    } else {
-        println!("Probably not Electrum");
+    for (wallet_name, result) in results.iter() {
+        let result_name: &str;
+        match result {
+            WalletConfidence::DefinitelyNot => { result_name = "Definitely Not"; }
+            WalletConfidence::ProbablyNot => { result_name = "Probably Not"; }
+            WalletConfidence::Indeterminate => { result_name = "Indeterminate"; }
+            WalletConfidence::MaybeYes => { result_name = "Maybe"; }
+            WalletConfidence::ProbablyYes => { result_name = "Probably"; }
+        }
+        println!("{}\t\t{}", wallet_name, result_name);
     }
 }
