@@ -36,8 +36,12 @@ fn main() {
 
 
     let txinfo = rpc.get_raw_transaction_info(&txid, None).unwrap();
-    let prevouts = get_previous_outputs(&txinfo.transaction().unwrap(), &rpc);
-    let heur = check_heuristics(&txinfo.transaction().unwrap(), &prevouts, txinfo.confirmations, &rpc);
+    let tx = txinfo.transaction().unwrap();
+
+    let prevouts = get_previous_outputs(&tx, &rpc);
+    let tip = rpc.get_block_count().unwrap();
+
+    let heur = check_heuristics(&tx, &prevouts, txinfo.confirmations, tip);
 
     println!("{}:", txid);
 

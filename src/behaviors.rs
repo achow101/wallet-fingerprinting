@@ -7,7 +7,6 @@ use bitcoin::{
 use bitcoin::blockdata::constants::MAX_SEQUENCE;
 use bitcoin::consensus::Encodable;
 use bitcoin::secp256k1::Signature;
-use bitcoincore_rpc::{Client, RpcApi};
 
 use factorial::Factorial;
 
@@ -85,12 +84,12 @@ pub fn probability_low_r_grinding(tx: &Transaction) -> f32 {
     return 1.0 - 0.5_f32.powf(count_sigs as f32);
 }
 
-pub fn probably_anti_fee_snipe(tx: &Transaction, confs: Option<u32>, rpc: &Client) -> bool {
+pub fn probably_anti_fee_snipe(tx: &Transaction, confs: Option<u32>, tip_height: u64) -> bool {
     if tx.lock_time == 0 {
         return false;
     }
 
-    let mut block_height = rpc.get_block_count().unwrap();
+    let mut block_height = tip_height;
     if let Some(c) = confs {
         block_height -= u64::from(c) - 1;
     }
@@ -164,11 +163,11 @@ pub struct Heuristics {
     pub neg_ev: bool,
 }
 
-pub fn check_heuristics(tx: &Transaction, prevouts: &HashMap<OutPoint, TxOut>, confs: Option<u32>, rpc: &Client) -> Heuristics {
+pub fn check_heuristics(tx: &Transaction, prevouts: &HashMap<OutPoint, TxOut>, confs: Option<u32>, tip_height: u64) -> Heuristics {
     let h = Heuristics {
         tx_version: tx.version,
         sequence_type: classify_sequences(&tx),
-        anti_fee_snipe: probably_anti_fee_snipe(&tx, confs, rpc),
+        anti_fee_snipe: probably_anti_fee_snipe(&tx, confs, tip_height),
         prob_low_r: probability_low_r_grinding(&tx),
         prob_bip69: probability_bip69(&tx),
         neg_ev: spends_negative_ev(&tx, &prevouts),
