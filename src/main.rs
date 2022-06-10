@@ -37,6 +37,8 @@ fn main() {
     let txinfo = rpc.get_raw_transaction_info(&txid, None).unwrap();
     let prevouts = get_previous_outputs(&txinfo.transaction().unwrap(), &rpc);
 
+    println!("{}:", txid);
+
     let mut results = HashMap::<&str, WalletConfidence>::new();
     results.insert("Bitcoin Core", maybe_bitcoin_core(&txinfo, &prevouts, &rpc));
     results.insert("Electrum", maybe_electrum(&txinfo, &prevouts, &rpc));
@@ -52,4 +54,5 @@ fn main() {
         }
         println!("{}\t\t{}", wallet_name, result_name);
     }
+    println!();
 }
