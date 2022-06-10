@@ -43,7 +43,7 @@ fn main() {
 
     let heur = check_heuristics(&tx, &prevouts, txinfo.confirmations, tip);
 
-    println!("{}:", txid);
+    println!("{}", txid);
 
     println!("{:?}", heur);
 
