@@ -19,3 +19,5 @@
 * BIP 69 sorted
 * Tx Version 2
 * Postive EV only unless SEND_MAX
+* Same input types
+* Change type same as input type
