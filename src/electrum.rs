@@ -1,55 +1,38 @@
 use crate::behaviors;
 
 use behaviors::{
-    classify_sequences,
-    probably_anti_fee_snipe,
-    probability_low_r_grinding,
-    probability_bip69,
+    Heuristics,
     SequenceType,
-    spends_negative_ev,
 };
 
 use crate::util;
 
 use util::WalletConfidence;
 
-use bitcoin::{
-    OutPoint,
-    TxOut,
-};
-use bitcoincore_rpc::Client;
-use bitcoincore_rpc::json::GetRawTransactionResult;
-
-use std::collections::HashMap;
-
-pub fn maybe_electrum(txinfo: &GetRawTransactionResult, prevouts: &HashMap<OutPoint, TxOut>, rpc: &Client) -> WalletConfidence {
-    let tx = txinfo.transaction().unwrap();
-
-    if tx.version != 2 {
+pub fn analyze_electrum(h: &Heuristics) -> WalletConfidence {
+    if h.tx_version != 2 {
         return WalletConfidence::DefinitelyNot;
     }
 
-    match classify_sequences(&tx) {
+    match h.sequence_type {
         SequenceType::OnlyRBF => {}
         SequenceType::OnlyNonFinal => {}
         _ => { return WalletConfidence::DefinitelyNot; }
     }
 
-    let prob_low_r = probability_low_r_grinding(&tx);
-    if prob_low_r <= 0.5 {
+    if h.prob_low_r <= 0.5 {
         return WalletConfidence::DefinitelyNot;
     }
 
-    if !probably_anti_fee_snipe(&tx, txinfo.confirmations, rpc) {
+    if !h.anti_fee_snipe {
         return WalletConfidence::ProbablyNot;
     }
 
-    if spends_negative_ev(&tx, &prevouts) {
+    if h.neg_ev {
         return WalletConfidence::ProbablyNot;
     }
 
-    let prob_bip69 = probability_bip69(&tx);
-    match prob_bip69 {
+    match h.prob_bip69 {
         Some(p) => {
             if p < 0.5 {
                 return WalletConfidence::ProbablyNot;

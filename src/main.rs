@@ -4,12 +4,13 @@ extern crate bitcoincore_rpc;
 extern crate bitcoin;
 
 mod behaviors;
+use behaviors::check_heuristics;
 
 mod bitcoin_core;
-use bitcoin_core::maybe_bitcoin_core;
+use bitcoin_core::analyze_bitcoin_core;
 
 mod electrum;
-use electrum::maybe_electrum;
+use electrum::analyze_electrum;
 
 mod util;
 use util::{
@@ -36,12 +37,13 @@ fn main() {
 
     let txinfo = rpc.get_raw_transaction_info(&txid, None).unwrap();
     let prevouts = get_previous_outputs(&txinfo.transaction().unwrap(), &rpc);
+    let heur = check_heuristics(&txinfo.transaction().unwrap(), &prevouts, txinfo.confirmations, &rpc);
 
     println!("{}:", txid);
 
     let mut results = HashMap::<&str, WalletConfidence>::new();
-    results.insert("Bitcoin Core", maybe_bitcoin_core(&txinfo, &prevouts, &rpc));
-    results.insert("Electrum", maybe_electrum(&txinfo, &prevouts, &rpc));
+    results.insert("Bitcoin Core", analyze_bitcoin_core(&heur));
+    results.insert("Electrum",analyze_electrum(&heur));
 
     for (wallet_name, result) in results.iter() {
         let result_name: &str;

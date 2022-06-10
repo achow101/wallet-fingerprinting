@@ -154,3 +154,24 @@ pub fn spends_negative_ev(tx: &Transaction, prevouts: &HashMap<OutPoint, TxOut>)
     }
     return false;
 }
+
+pub struct Heuristics {
+    pub tx_version: i32,
+    pub sequence_type: SequenceType,
+    pub anti_fee_snipe: bool,
+    pub prob_low_r: f32,
+    pub prob_bip69: Option<f64>,
+    pub neg_ev: bool,
+}
+
+pub fn check_heuristics(tx: &Transaction, prevouts: &HashMap<OutPoint, TxOut>, confs: Option<u32>, rpc: &Client) -> Heuristics {
+    let h = Heuristics {
+        tx_version: tx.version,
+        sequence_type: classify_sequences(&tx),
+        anti_fee_snipe: probably_anti_fee_snipe(&tx, confs, rpc),
+        prob_low_r: probability_low_r_grinding(&tx),
+        prob_bip69: probability_bip69(&tx),
+        neg_ev: spends_negative_ev(&tx, &prevouts),
+    };
+    return h;
+}
