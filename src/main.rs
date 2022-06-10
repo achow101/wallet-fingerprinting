@@ -30,9 +30,30 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let txid = Txid::from_hex(&args[1]).unwrap();
 
+    let mut rpcuser = String::new();
+    match env::var("RPCUSER") {
+        Ok(val) => {
+            rpcuser.push_str(&val);
+        }
+        Err(e) => {
+            println!("couldn't interpret RPCUSER: {e}");
+            return;
+        }
+    }
+    let mut rpcpass = String::new();
+    match env::var("RPCPASSWORD") {
+        Ok(val) => {
+            rpcpass.push_str(&val);
+        }
+        Err(e) => {
+            println!("couldn't interpret RPCPASSWORD: {e}");
+            return;
+        }
+    }
+
+
     let rpc: Client = Client::new(&"http://localhost:8332".to_string(),
-        Auth::UserPass("rpcuser".to_string(),
-        "rpcpass".to_string())).unwrap();
+        Auth::UserPass(rpcuser.to_string(), rpcpass.to_string())).unwrap();
 
 
     let txinfo = rpc.get_raw_transaction_info(&txid, None).unwrap();
