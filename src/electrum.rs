@@ -9,6 +9,10 @@ use crate::util;
 
 use util::WalletConfidence;
 
+use rawtx_rs::input::InputType;
+
+use std::collections::HashSet;
+
 pub fn analyze_electrum(h: &Heuristics) -> WalletConfidence {
     if h.tx_version != 2 {
         return WalletConfidence::DefinitelyNot;
@@ -35,6 +39,12 @@ pub fn analyze_electrum(h: &Heuristics) -> WalletConfidence {
             }
         }
         None => {}
+    }
+
+    let allowed_input_types = HashSet::from([InputType::P2pkh, InputType::P2shP2wpkh, InputType::P2wpkh]);
+    let diff: HashSet<_> = h.input_types.difference(&allowed_input_types).collect();
+    if !diff.is_empty() {
+        return WalletConfidence::DefinitelyNot;
     }
 
     if !h.anti_fee_snipe {

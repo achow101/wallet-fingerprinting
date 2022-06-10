@@ -9,6 +9,10 @@ use crate::util;
 
 use util::WalletConfidence;
 
+use rawtx_rs::input::InputType;
+
+use std::collections::HashSet;
+
 pub fn analyze_bitcoin_core(h: &Heuristics) -> WalletConfidence {
     if h.tx_version != 2 {
         return WalletConfidence::DefinitelyNot;
@@ -21,6 +25,12 @@ pub fn analyze_bitcoin_core(h: &Heuristics) -> WalletConfidence {
     }
 
     if h.prob_low_r <= 0.5 {
+        return WalletConfidence::DefinitelyNot;
+    }
+
+    let allowed_input_types = HashSet::from([InputType::P2pk, InputType::P2pkh, InputType::P2shP2wpkh, InputType::P2wpkh, InputType::P2trkp]);
+    let diff: HashSet<_> = h.input_types.difference(&allowed_input_types).collect();
+    if !diff.is_empty() {
         return WalletConfidence::DefinitelyNot;
     }
 

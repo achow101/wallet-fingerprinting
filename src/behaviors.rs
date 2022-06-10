@@ -10,6 +10,9 @@ use bitcoin::secp256k1::Signature;
 
 use factorial::Factorial;
 
+use rawtx_rs::input::{
+    InputType,
+};
 use rawtx_rs::output::{
     OutputInfo,
 };
@@ -19,6 +22,7 @@ use rawtx_rs::script::SignatureType;
 use std::collections::{
     BTreeSet,
     HashMap,
+    HashSet,
 };
 
 const MAX_NON_FINAL_SEQUENCE: u32 = MAX_SEQUENCE - 1;
@@ -214,6 +218,15 @@ pub fn maybe_same_change_type(tx: &Transaction, prevouts: &HashMap<OutPoint, TxO
     return Some(has_same);
 }
 
+pub fn get_input_types(tx:& Transaction) -> HashSet<InputType> {
+    let mut out = HashSet::<InputType>::new();
+    let txinfo = TxInfo::new(&tx).unwrap();
+    for txininfo in txinfo.input_infos.iter() {
+        out.insert(txininfo.in_type);
+    }
+    return out;
+}
+
 #[derive(Debug)]
 pub struct Heuristics {
     pub tx_version: i32,
@@ -224,6 +237,7 @@ pub struct Heuristics {
     pub neg_ev: bool,
     pub mixed_input_types: bool,
     pub maybe_same_change_type: Option<bool>,
+    pub input_types: HashSet<InputType>,
 }
 
 pub fn check_heuristics(tx: &Transaction, prevouts: &HashMap<OutPoint, TxOut>, confs: Option<u32>, tip_height: u64) -> Heuristics {
@@ -236,6 +250,7 @@ pub fn check_heuristics(tx: &Transaction, prevouts: &HashMap<OutPoint, TxOut>, c
         neg_ev: spends_negative_ev(&tx, &prevouts),
         mixed_input_types: mixed_input_type(&tx, &prevouts),
         maybe_same_change_type: maybe_same_change_type(&tx, &prevouts),
+        input_types: get_input_types(&tx),
     };
     return h;
 }
