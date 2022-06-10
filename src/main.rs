@@ -11,27 +11,14 @@ use bitcoin_core::maybe_bitcoin_core;
 mod electrum;
 use electrum::maybe_electrum;
 
-use bitcoin::{
-    OutPoint,
-    Transaction,
-    TxOut,
-};
+mod util;
+use util::get_previous_outputs;
+
 use bitcoin::hashes::hex::FromHex;
 use bitcoin::hash_types::Txid;
 use bitcoincore_rpc::{Auth, Client, RpcApi};
 
-use std::collections::HashMap;
-
 use std::env;
-
-fn get_previous_outputs(tx: &Transaction, rpc: &Client) -> HashMap<OutPoint, TxOut> {
-    let mut out = HashMap::<OutPoint, TxOut>::new();
-    for txin in tx.input.iter() {
-        let prev_tx = rpc.get_raw_transaction(&txin.previous_output.txid, None).unwrap();
-        out.insert(txin.previous_output, prev_tx.output[txin.previous_output.vout as usize].clone());
-    }
-    return out;
-}
 
 fn main() {
     let args: Vec<String> = env::args().collect();
