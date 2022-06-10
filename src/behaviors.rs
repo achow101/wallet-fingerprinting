@@ -175,6 +175,45 @@ pub fn mixed_input_type(tx: &Transaction, prevouts: &HashMap<OutPoint, TxOut>) -
     return false;
 }
 
+pub fn maybe_same_change_type(tx: &Transaction, prevouts: &HashMap<OutPoint, TxOut>) -> Option<bool> {
+    if tx.output.len() == 1 {
+        return None;
+    }
+
+    let mut curr_out_type = None;
+    for txin in tx.input.iter() {
+        let prev_out = prevouts.get(&txin.previous_output).unwrap();
+        let out_type = OutputInfo::new(prev_out).out_type;
+        match curr_out_type {
+            Some(o) => {
+                if o != out_type {
+                    return None;
+                }
+            }
+            None => { curr_out_type = Some(out_type); }
+        }
+    }
+
+    if let None = curr_out_type {
+        return None;
+    }
+
+    let mut has_same = false;
+    for txout in tx.output.iter() {
+        let out_type = OutputInfo::new(txout).out_type;
+        match curr_out_type {
+            Some(o) => {
+                if o == out_type {
+                    has_same = true
+                }
+            }
+            None => { assert!(false); }
+        }
+    }
+
+    return Some(has_same);
+}
+
 #[derive(Debug)]
 pub struct Heuristics {
     pub tx_version: i32,
@@ -184,6 +223,7 @@ pub struct Heuristics {
     pub prob_bip69: Option<f64>,
     pub neg_ev: bool,
     pub mixed_input_types: bool,
+    pub maybe_same_change_type: Option<bool>,
 }
 
 pub fn check_heuristics(tx: &Transaction, prevouts: &HashMap<OutPoint, TxOut>, confs: Option<u32>, tip_height: u64) -> Heuristics {
@@ -195,6 +235,7 @@ pub fn check_heuristics(tx: &Transaction, prevouts: &HashMap<OutPoint, TxOut>, c
         prob_bip69: probability_bip69(&tx),
         neg_ev: spends_negative_ev(&tx, &prevouts),
         mixed_input_types: mixed_input_type(&tx, &prevouts),
+        maybe_same_change_type: maybe_same_change_type(&tx, &prevouts),
     };
     return h;
 }

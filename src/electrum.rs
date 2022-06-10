@@ -28,6 +28,15 @@ pub fn analyze_electrum(h: &Heuristics) -> WalletConfidence {
         return WalletConfidence::DefinitelyNot;
     }
 
+    match h.maybe_same_change_type {
+        Some(b) => {
+            if !b {
+                return WalletConfidence::DefinitelyNot;
+            }
+        }
+        None => {}
+    }
+
     if !h.anti_fee_snipe {
         return WalletConfidence::ProbablyNot;
     }
