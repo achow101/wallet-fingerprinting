@@ -24,6 +24,10 @@ pub fn analyze_electrum(h: &Heuristics) -> WalletConfidence {
         return WalletConfidence::DefinitelyNot;
     }
 
+    if h.mixed_input_types {
+        return WalletConfidence::DefinitelyNot;
+    }
+
     if !h.anti_fee_snipe {
         return WalletConfidence::ProbablyNot;
     }

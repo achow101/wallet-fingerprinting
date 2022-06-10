@@ -10,6 +10,9 @@ use bitcoin::secp256k1::Signature;
 
 use factorial::Factorial;
 
+use rawtx_rs::output::{
+    OutputInfo,
+};
 use rawtx_rs::tx::TxInfo;
 use rawtx_rs::script::SignatureType;
 
@@ -155,6 +158,24 @@ pub fn spends_negative_ev(tx: &Transaction, prevouts: &HashMap<OutPoint, TxOut>)
     return false;
 }
 
+pub fn mixed_input_type(tx: &Transaction, prevouts: &HashMap<OutPoint, TxOut>) -> bool {
+    let mut curr_out_type = None;
+    for txin in tx.input.iter() {
+        let prev_out = prevouts.get(&txin.previous_output).unwrap();
+        let out_type = OutputInfo::new(prev_out).out_type;
+        match curr_out_type {
+            Some(o) => {
+                if o != out_type {
+                    return true;
+                }
+            }
+            None => { curr_out_type = Some(out_type); }
+        }
+    }
+    return false;
+}
+
+#[derive(Debug)]
 pub struct Heuristics {
     pub tx_version: i32,
     pub sequence_type: SequenceType,
@@ -162,6 +183,7 @@ pub struct Heuristics {
     pub prob_low_r: f32,
     pub prob_bip69: Option<f64>,
     pub neg_ev: bool,
+    pub mixed_input_types: bool,
 }
 
 pub fn check_heuristics(tx: &Transaction, prevouts: &HashMap<OutPoint, TxOut>, confs: Option<u32>, tip_height: u64) -> Heuristics {
@@ -172,6 +194,7 @@ pub fn check_heuristics(tx: &Transaction, prevouts: &HashMap<OutPoint, TxOut>, c
         prob_low_r: probability_low_r_grinding(&tx),
         prob_bip69: probability_bip69(&tx),
         neg_ev: spends_negative_ev(&tx, &prevouts),
+        mixed_input_types: mixed_input_type(&tx, &prevouts),
     };
     return h;
 }
