@@ -21,6 +21,7 @@ use std::collections::{
 const MAX_NON_FINAL_SEQUENCE: u32 = MAX_SEQUENCE - 1;
 const MAX_BIP125_RBF_SEQUENCE: u32 = MAX_SEQUENCE - 2;
 
+#[derive(Debug)]
 pub enum SequenceType {
     OnlyFinal,
     MixedFinal,

@@ -7,6 +7,7 @@ use bitcoincore_rpc::{Client, RpcApi};
 
 use std::collections::HashMap;
 
+#[derive(Debug)]
 pub enum WalletConfidence {
     DefinitelyNot,
     ProbablyNot,

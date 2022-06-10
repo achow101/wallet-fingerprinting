@@ -45,20 +45,15 @@ fn main() {
 
     println!("{}:", txid);
 
+    println!("{:?}", heur);
+
     let mut results = HashMap::<&str, WalletConfidence>::new();
     results.insert("Bitcoin Core", analyze_bitcoin_core(&heur));
     results.insert("Electrum",analyze_electrum(&heur));
 
+    println!("Possible wallets:");
     for (wallet_name, result) in results.iter() {
-        let result_name: &str;
-        match result {
-            WalletConfidence::DefinitelyNot => { result_name = "Definitely Not"; }
-            WalletConfidence::ProbablyNot => { result_name = "Probably Not"; }
-            WalletConfidence::Indeterminate => { result_name = "Indeterminate"; }
-            WalletConfidence::MaybeYes => { result_name = "Maybe"; }
-            WalletConfidence::ProbablyYes => { result_name = "Probably"; }
-        }
-        println!("{}\t\t{}", wallet_name, result_name);
+        println!("\t{}\t\t{:?}", wallet_name, result);
     }
     println!();
 }
